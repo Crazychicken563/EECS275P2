@@ -4,24 +4,26 @@ module.exports = {
     /* expected inputs:
      * docElement (where to insert the graph)
      * size {width:x, hight:y}
-     * axis {xText:"", yText:""}
+     * dataKeys {x:"", y:"", category:""}
      * data: [(x,y)]
      * callback
      */
-    createGraph: function(docElement, size, axis, data, plotLine, callback) {
+    createGraph: function(docElement, size, dataKeys, data, plotLine, callback) {
         var x = d3.scaleLinear().range([0, size.width]);
         var y = d3.scaleLinear().range([size.height, 0]);
 
         var color = d3.scaleOrdinal(d3.schemeCategory10);
 
-        var category;
-        var keys = Object.keys(data[0]);
-        for (var i in keys) {
-            var key = keys[i];
-            console.log("key:" + key);
-            if (axis.x !== key && axis.y !== key) {
-                category = key;
-                break;
+        var category = dataKeys.category;
+        if (!category) {
+            var keys = Object.keys(data[0]);
+            for (var i in keys) {
+                var key = keys[i];
+                console.log("key:" + key);
+                if (dataKeys.x !== key && dataKeys.y !== key) {
+                    category = key;
+                    break;
+                }
             }
         }
         console.log("category " + category);
@@ -35,11 +37,11 @@ module.exports = {
             .attr('height', size.height);
 
         var xExtent = d3.extent(data, function(d) {
-            return d[axis.x];
+            return d[dataKeys.x];
         });
         var xRange = xExtent[1] - xExtent[0];
         var yExtent = d3.extent(data, function(d) {
-            return d[axis.y];
+            return d[dataKeys.y];
         });
         var yRange = yExtent[1] - yExtent[0];
 
@@ -48,10 +50,10 @@ module.exports = {
         y.domain([yExtent[0] - (yRange * .05), yExtent[1] + (yRange * .05)]).nice();
 
         /*x.domain(d3.extent(data, function(d) {
-            return d[axis.x];
+            return d[dataKeys.x];
         })).nice();
         y.domain(d3.extent(data, function(d) {
-            return d[axis.y];
+            return d[dataKeys.y];
         })).nice();*/
 
         svg.append("g")
@@ -67,7 +69,7 @@ module.exports = {
             .style("text-anchor", "end")
             .style("stroke", "#000")
             .style("shape-rendering", "crispEdges")
-            .text(axis.x);
+            .text(dataKeys.x);
 
         svg.append("g")
             .attr("class", "y axis")
@@ -83,7 +85,7 @@ module.exports = {
             .style("text-anchor", "end")
             .style("stroke", "#000")
             .style("shape-rendering", "crispEdges")
-            .text(axis.y)
+            .text(dataKeys.y)
 
         svg.selectAll(".dot")
             .data(data)
@@ -91,10 +93,10 @@ module.exports = {
             .attr("class", "dot")
             .attr("r", 3.5)
             .attr("cx", function(d) {
-                return x(d[axis.x]);
+                return x(d[dataKeys.x]);
             })
             .attr("cy", function(d) {
-                return y(d[axis.y]);
+                return y(d[dataKeys.y]);
             })
             .style("stroke", "#000")
             .style("fill", function(d) {

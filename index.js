@@ -37,8 +37,151 @@ csvReader.on('done', (error) => {
     if (error) {
         console.log(error);
     }
-    question2();
+    //question1();
+    //question2();
+    question3();
 });
+
+function question3() {
+    const dom = new JSDOM(
+        `<html>
+            <body>
+                <div>Question 3 Part X<br>Initial Random Gradient for versicolor and virginica</div>
+                <div id=initial-boundary></div>
+                <div id="graph1" style="width: fit-content; height: fit-content; padding: 5px; border: black; border-style: solid; border-width: thin;"></div>
+                <div>Question 3 Part X<br>Halfway Through Gradient Decent for versicolor and virginica</div>
+                <div id=halfway-boundary></div>
+                <div id="graph2" style="width: fit-content; height: fit-content; padding: 5px; border: black; border-style: solid; border-width: thin;"></div>
+                <div>Question 3 Part X<br>Midway Through Gradient Decent Error History for versicolor and virginica</div>
+                <div id="graph3" style="width: fit-content; height: fit-content; padding: 5px; border: black; border-style: solid; border-width: thin;"></div>
+                <div>Question 3 Part X<br>Final State of Gradient Decent for versicolor and virginica</div>
+                <div id=final-boundary></div>
+                <div id="graph4" style="width: fit-content; height: fit-content; padding: 5px; border: black; border-style: solid; border-width: thin;"></div>
+                <div>Question 3 Part X<br>Final State of Gradient Decent Error History for versicolor and virginica</div>
+                <div id="graph5" style="width: fit-content; height: fit-content; padding: 5px; border: black; border-style: solid; border-width: thin;"></div>
+            </body>
+        </html>`
+    );
+
+    var intercept = Math.random() * 3 + 2;
+    var startBoundary = {
+        intercept: intercept,
+        slope: -1 * Math.random() * (intercept / 3) + 0.5
+    }
+
+    calculateMSE(irisData, startBoundary, function(startError) {
+        calculateDescent(startError, 100, startBoundary, [], function(finalBoundary, gradientHistory) {
+            console.log(gradientHistory);
+            reclassify(irisData, startBoundary, function(reclassifiedData) {
+                // First plot
+                dom.window.document.querySelector('#initial-boundary').innerHTML = 'Initial Boundary: ' +
+                    'y=' + startBoundary.slope + '*x+' + startBoundary.intercept;
+                plotter.createGraph(dom.window.document.querySelector('#graph1'), {
+                    width: 910,
+                    height: 440
+                }, {
+                    x: "petal_length",
+                    y: "petal_width"
+                }, reclassifiedData, [startBoundary], function(graphHTML) {
+                    var halfwayGradientHistoryIndex = Math.floor(gradientHistory.length / 2);
+                    var halfwayGradient = gradientHistory[halfwayGradientHistoryIndex];
+                    reclassify(irisData, halfwayGradient, function(reclassifiedData) {
+                        // Middle plot
+                        dom.window.document.querySelector('#initial-boundary').innerHTML = 'Halfway Boundary: ' +
+                            'y=' + halfwayGradient.slope + '*x+' + halfwayGradient.intercept;
+                        plotter.createGraph(dom.window.document.querySelector('#graph2'), {
+                            width: 910,
+                            height: 440
+                        }, {
+                            x: "petal_length",
+                            y: "petal_width"
+                        }, reclassifiedData, [halfwayGradient], function(graphHTML) {
+                            var plotData = [];
+                            for (var i = 0; i < halfwayGradientHistoryIndex; i++) {
+                                plotData.push({
+                                    error: gradientHistory[i].error,
+                                    iteration: i
+                                });
+                            }
+                            // Middle Plot Error
+                            plotter.createGraph(dom.window.document.querySelector('#graph3'), {
+                                width: 910,
+                                height: 440
+                            }, {
+                                x: "iteration",
+                                y: "error",
+                                category: "error"
+                            }, plotData, undefined, function(graphHTML) {
+                                var finalGradient = gradientHistory[gradientHistory.length - 1];
+                                reclassify(irisData, finalGradient, function(
+                                    reclassifiedData) {
+                                    // Final plot
+                                    dom.window.document.querySelector('#initial-boundary').innerHTML =
+                                        'Final Boundary: ' +
+                                        'y=' + finalGradient.slope + '*x+' + finalGradient.intercept;
+                                    plotter.createGraph(dom.window.document.querySelector(
+                                        '#graph4'
+                                    ), {
+                                        width: 910,
+                                        height: 440
+                                    }, {
+                                        x: "petal_length",
+                                        y: "petal_width"
+                                    }, reclassifiedData, [finalGradient], function(
+                                        graphHTML) {
+                                        for (var i = halfwayGradientHistoryIndex; i <
+                                            gradientHistory.length; i++) {
+                                            plotData.push({
+                                                error: gradientHistory[i].error,
+                                                iteration: i
+                                            });
+                                        }
+                                        // Final Plot Error
+                                        plotter.createGraph(dom.window.document.querySelector(
+                                            '#graph5'
+                                        ), {
+                                            width: 910,
+                                            height: 440
+                                        }, {
+                                            x: "iteration",
+                                            y: "error",
+                                            category: "error"
+                                        }, plotData, undefined, function(
+                                            graphHTML) {
+                                            fs.writeFileSync(
+                                                'question3.html',
+                                                dom.window.document.querySelector(
+                                                    'body'
+                                                ).innerHTML
+                                            );
+                                        });
+                                    });
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    });
+}
+
+function calculateDescent(currError, prevError, currBoundary, gradientHistory, callback) {
+    // gradient descent by calling the step function until the MSE doesn't change more than 0.00001 ("converges")
+    currBoundary.error = currError;
+    gradientHistory.push(currBoundary);
+    if (prevError - currError > 0.00001) {
+        calculateGradient(irisData, currBoundary, function(newBoundary) {
+            calculateMSE(irisData, newBoundary, function(newError) {
+                process.nextTick(function() {
+                    calculateDescent(newError, currError, newBoundary, gradientHistory, callback);
+                });
+            });
+        });
+    } else {
+        callback(currBoundary, gradientHistory);
+    }
+}
 
 function question2() {
     const dom = new JSDOM(
@@ -108,9 +251,14 @@ function question2() {
                                     }, {
                                         x: "petal_length",
                                         y: "petal_width"
-                                    }, reclassifiedData, plotLines, function(graphHTML) {
-                                        fs.writeFileSync('question2.html', dom.window.document
-                                            .querySelector('body').innerHTML);
+                                    }, reclassifiedData, plotLines, function(
+                                        graphHTML) {
+                                        fs.writeFileSync(
+                                            'question2.html',
+                                            dom.window.document.querySelector(
+                                                'body'
+                                            ).innerHTML
+                                        );
                                     });
                                 });
                             });
@@ -134,7 +282,7 @@ function calculateGradient(data, boundary, callback) {
 
     // Question 2 Part D
     // Scalar Form
-    console.log("Scalar Form: " + slopeGradient);
+    // console.log("Scalar Form: " + slopeGradient);
 
     var change = (slopeGradient * 2) / data.length;
     var change_b = (interceptGradient * 2) / data.length;
@@ -147,7 +295,7 @@ function calculateGradient(data, boundary, callback) {
 
     // Question 2 Part D
     // Vector Form
-    console.log("Vector Form: " + gradientBoundary);
+    // console.log("Vector Form: " + gradientBoundary);
     callback(gradientBoundary);
 }
 
