@@ -102,33 +102,42 @@ module.exports = {
             });
 
         if (plotLine) {
-            var lineData = [];
-            lineData.push({
-                x: xExtent[0],
-                y: plotLine.slope * xExtent[0] + plotLine.intercept
-            });
-            lineData.push({
-                x: xExtent[1],
-                y: plotLine.slope * xExtent[1] + plotLine.intercept
-            });
-            var line = d3.line()
-                .x(function(d) {
-                    console.log("x:" + x(d.x));
-                    return x(d.x);
-                })
-                .y(function(d) {
-                    console.log("y:" + y(d.y));
-                    return y(d.y);
+            for (var i in plotLine) {
+                var lineData = plotLine[i];
+
+                var plotData = [];
+                plotData.push({
+                    x: xExtent[0],
+                    y: lineData.slope * xExtent[0] + lineData.intercept
                 });
-            console.log(lineData[0]);
-            svg.append("path")
-                .datum(lineData)
-                .attr("fill", "none")
-                .attr("stroke", "steelblue")
-                .attr("stroke-linejoin", "round")
-                .attr("stroke-linecap", "round")
-                .attr("stroke-width", 1.5)
-                .attr("d", line);
+                plotData.push({
+                    x: xExtent[1],
+                    y: lineData.slope * xExtent[1] + lineData.intercept
+                });
+                var line = d3.line()
+                    .x(function(d) {
+                        console.log("x:" + x(d.x));
+                        return x(d.x);
+                    })
+                    .y(function(d) {
+                        console.log("y:" + y(d.y));
+                        return y(d.y);
+                    });
+
+                var strokeColor = lineData.strokeColor;
+                if (!strokeColor) {
+                    strokeColor = "steelblue";
+                }
+                console.log(plotData[0]);
+                svg.append("path")
+                    .datum(plotData)
+                    .attr("fill", "none")
+                    .attr("stroke", strokeColor)
+                    .attr("stroke-linejoin", "round")
+                    .attr("stroke-linecap", "round")
+                    .attr("stroke-width", 1.5)
+                    .attr("d", line);
+            }
         }
 
         var legend = svg.selectAll(".legend")

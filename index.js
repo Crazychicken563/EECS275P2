@@ -50,7 +50,8 @@ function question2() {
                 <div>Question 2 Part B<br>Large MSE Plot of Classification for versicolor and virginica</div>
                 <div id=mse-large></div>
                 <div id="graph2" style="width: fit-content; height: fit-content; padding: 5px; border: black; border-style: solid; border-width: thin;"></div>
-                <div>Question 1 Part C<br>Classification Analysis of versicolor and virginica with user assigned decision boundary</div>
+                <div>Question 2 Part E<br>Calculate Gradient Step with user assigned decision boundary</div>
+                <div id=gradient></div>
                 <div id="graph3" style="width: fit-content; height: fit-content; padding: 5px; border: black; border-style: solid; border-width: thin;"></div>
             </body>
         </html>`
@@ -63,35 +64,91 @@ function question2() {
     };
     reclassify(irisData, smallErrorBoundary, function(reclassifiedData) {
         calculateMSE(reclassifiedData, smallErrorBoundary, function(error) {
-            dom.window.document.querySelector('#mse-small').innerHTML = 'Mean squared error: ' + error;
+            dom.window.document.querySelector('#mse-small').innerHTML = 'MSE: ' + error;
             plotter.createGraph(dom.window.document.querySelector('#graph1'), {
                 width: 910,
                 height: 440
             }, {
                 x: "petal_length",
                 y: "petal_width"
-            }, reclassifiedData, smallErrorBoundary, function(graphHTML) {
+            }, reclassifiedData, [smallErrorBoundary], function(graphHTML) {
                 var largeErrorBoundary = {
                     slope: -0.371,
                     intercept: 4.5
                 };
                 reclassify(irisData, largeErrorBoundary, function(reclassifiedData) {
                     calculateMSE(reclassifiedData, largeErrorBoundary, function(error) {
-                        dom.window.document.querySelector('#mse-large').innerHTML = 'Mean squared error: ' + error;
+                        dom.window.document.querySelector('#mse-large').innerHTML = 'MSE: ' + error;
                         plotter.createGraph(dom.window.document.querySelector('#graph2'), {
                             width: 910,
                             height: 440
                         }, {
                             x: "petal_length",
                             y: "petal_width"
-                        }, reclassifiedData, largeErrorBoundary, function(graphHTML) {
-                            fs.writeFileSync('question2.html', dom.window.document.querySelector('body').innerHTML);
+                        }, reclassifiedData, [largeErrorBoundary], function(graphHTML) {
+                            // Part E
+                            reclassify(irisData, smallErrorBoundary, function(reclassifiedData) {
+                                calculateGradient(reclassifiedData, smallErrorBoundary, function(
+                                    gradientBoundary) {
+                                    dom.window.document.querySelector('#gradient').innerHTML =
+                                        'Gradient Step:' +
+                                        '<br>Before: ' +
+                                        'y=' + smallErrorBoundary.slope + '*x+' +
+                                        smallErrorBoundary.intercept +
+                                        '<br>After: ' +
+                                        'y=' + gradientBoundary.slope + '*x+' +
+                                        gradientBoundary.intercept;
+
+                                    gradientBoundary.strokeColor = "red";
+                                    var plotLines = [smallErrorBoundary, gradientBoundary];
+                                    plotter.createGraph(dom.window.document.querySelector(
+                                        '#graph3'), {
+                                        width: 910,
+                                        height: 440
+                                    }, {
+                                        x: "petal_length",
+                                        y: "petal_width"
+                                    }, reclassifiedData, plotLines, function(graphHTML) {
+                                        fs.writeFileSync('question2.html', dom.window.document
+                                            .querySelector('body').innerHTML);
+                                    });
+                                });
+                            });
                         });
                     });
                 });
             });
         });
     });
+}
+
+// Question 2 Part C
+function calculateGradient(data, boundary, callback) {
+    // calculating the step of the gradient
+    var interceptGradient = 0;
+    var slopeGradient = 0;
+    for (var i in data) {
+        interceptGradient += (boundary.slope * data[i].petal_length + boundary.intercept) - data[i].petal_width;
+        slopeGradient += ((boundary.slope * data[i].petal_length + boundary.intercept) - data[i].petal_width) * data[i].petal_length;
+    }
+
+    // Question 2 Part D
+    // Scalar Form
+    console.log("Scalar Form: " + slopeGradient);
+
+    var change = (slopeGradient * 2) / data.length;
+    var change_b = (interceptGradient * 2) / data.length;
+    var delta = 0.2 / data.length;
+
+    var gradientBoundary = {
+        slope: boundary.slope - change * delta,
+        intercept: boundary.intercept - change_b * delta
+    };
+
+    // Question 2 Part D
+    // Vector Form
+    console.log("Vector Form: " + gradientBoundary);
+    callback(gradientBoundary);
 }
 
 // Question 2 Part A
@@ -141,7 +198,7 @@ function question1() {
         }, {
             x: "petal_length",
             y: "petal_width"
-        }, irisData, arbitraryClassificationBoundary, function(graphHTML) {
+        }, irisData, [arbitraryClassificationBoundary], function(graphHTML) {
             // PART C
             reclassify(irisData, arbitraryClassificationBoundary, function(reclassifiedData) {
                 plotter.createGraph(dom.window.document.querySelector('#graph3'), {
@@ -150,7 +207,7 @@ function question1() {
                 }, {
                     x: "petal_length",
                     y: "petal_width"
-                }, reclassifiedData, arbitraryClassificationBoundary, function(graphHTML) {
+                }, reclassifiedData, [arbitraryClassificationBoundary], function(graphHTML) {
                     fs.writeFileSync('question1.html', dom.window.document.querySelector('body').innerHTML);
                 });
             });
