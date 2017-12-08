@@ -35,11 +35,11 @@ module.exports = {
             .attr('height', size.height);
 
         var xExtent = d3.extent(data, function(d) {
-            return parseFloat(d[axis.x]);
+            return d[axis.x];
         });
         var xRange = xExtent[1] - xExtent[0];
         var yExtent = d3.extent(data, function(d) {
-            return parseFloat(d[axis.y]);
+            return d[axis.y];
         });
         var yRange = yExtent[1] - yExtent[0];
 
