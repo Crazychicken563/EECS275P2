@@ -9,8 +9,8 @@ module.exports = {
      * callback
      */
     createGraph: function(docElement, size, dataKeys, data, plotShape, callback) {
-        var x = d3.scaleLinear().range([0, size.width]);
-        var y = d3.scaleLinear().range([size.height, 0]);
+        var xScale = d3.scaleLinear().range([0, size.width]);
+        var yScale = d3.scaleLinear().range([size.height, 0]);
 
         var color = d3.scaleOrdinal(d3.schemeCategory10);
 
@@ -28,8 +28,8 @@ module.exports = {
         }
         console.log("category " + category);
 
-        var xAxis = d3.axisBottom().scale(x);
-        var yAxis = d3.axisLeft().scale(y);
+        var xAxis = d3.axisBottom().scale(xScale);
+        var yAxis = d3.axisLeft().scale(yScale);
 
         var svg = d3.select(docElement)
             .append("svg")
@@ -46,15 +46,8 @@ module.exports = {
         var yRange = yExtent[1] - yExtent[0];
 
         // set domain to be extent +- 5%
-        x.domain([xExtent[0] - (xRange * .05), xExtent[1] + (xRange * .05)]).nice();
-        y.domain([yExtent[0] - (yRange * .05), yExtent[1] + (yRange * .05)]).nice();
-
-        /*x.domain(d3.extent(data, function(d) {
-            return d[dataKeys.x];
-        })).nice();
-        y.domain(d3.extent(data, function(d) {
-            return d[dataKeys.y];
-        })).nice();*/
+        xScale.domain([xExtent[0] - (xRange * .05), xExtent[1] + (xRange * .05)]).nice();
+        yScale.domain([yExtent[0] - (yRange * .05), yExtent[1] + (yRange * .05)]).nice();
 
         svg.append("g")
             .attr("class", "x axis")
@@ -93,10 +86,10 @@ module.exports = {
             .attr("class", "dot")
             .attr("r", 3.5)
             .attr("cx", function(d) {
-                return x(d[dataKeys.x]);
+                return xScale(d[dataKeys.x]);
             })
             .attr("cy", function(d) {
-                return y(d[dataKeys.y]);
+                return yScale(d[dataKeys.y]);
             })
             .style("stroke", "#000")
             .style("fill", function(d) {
@@ -105,6 +98,7 @@ module.exports = {
 
         if (plotShape) {
             for (var i in plotShape) {
+                console.log(plotShape[i].shape);
                 if (plotShape[i].shape === 'line') {
                     var lineData = plotShape[i].data;
 
@@ -119,19 +113,16 @@ module.exports = {
                     });
                     var line = d3.line()
                         .x(function(d) {
-                            console.log("x:" + x(d.x));
-                            return x(d.x);
+                            return xScale(d.x);
                         })
                         .y(function(d) {
-                            console.log("y:" + y(d.y));
-                            return y(d.y);
+                            return yScale(d.y);
                         });
 
                     var strokeColor = lineData.strokeColor;
                     if (!strokeColor) {
                         strokeColor = "steelblue";
                     }
-                    console.log(plotData[0]);
                     svg.append("path")
                         .datum(plotData)
                         .attr("fill", "none")
@@ -140,8 +131,25 @@ module.exports = {
                         .attr("stroke-linecap", "round")
                         .attr("stroke-width", 1.5)
                         .attr("d", line);
-                } else if (plotShape.shape === 'circle') {
-                    // circle stuff!!
+                } else if (plotShape[i].shape === 'circle') {
+                    svg.append("ellipse")
+                        .datum(plotShape[i].data)
+                        .attr("cx", function(d) {
+                            return xScale(d.center.x);
+                        })
+                        .attr("cy", function(d) {
+                            return yScale(d.center.y);
+                        })
+                        .attr("rx", function(d) {
+                            return Math.abs(xScale(xExtent[0] + d.radius) - xScale(xExtent[0]));
+                        })
+                        .attr("ry", function(d) {
+                            return Math.abs(yScale(xExtent[0] + d.radius) - yScale(xExtent[0]));
+                        })
+                        .style("stroke", function(d) {
+                            return color(d.category);
+                        })
+                        .style("fill", "none");
                 } else {
                     console.log("UNKNOWN SHAPE");
                 }

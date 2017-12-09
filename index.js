@@ -42,9 +42,9 @@ csvReader.on('done', (error) => {
     if (error) {
         console.log(error);
     }
-    question1(filterSpecies('setosa'));
+    //question1(filterSpecies('setosa'));
     question2(filterSpecies('setosa'));
-    question3(filterSpecies('setosa'));
+    //question3(filterSpecies('setosa'));
     extraCreditQuestion(irisData);
 });
 
@@ -58,36 +58,49 @@ function extraCreditQuestion(data) {
         </html>`
     );
 
-    reclassify(data, classifyCircle, {
+    var boundaryCircles = {
         setosa: {
             center: {
                 x: 1.464,
                 y: 0.244
             },
-            radius: 1
+            radius: 0.5
         },
         versicolor: {
             center: {
                 x: 4,
                 y: 1.326
             },
-            radius: 1.01
+            radius: 1.1
         },
         virginica: {
             center: {
                 x: 6,
                 y: 2.026
             },
-            radius: 1.1
+            radius: 1.15
         }
-    }, function(reclassifiedData) {
+    };
+
+    reclassify(data, classifyCircle, boundaryCircles, function(reclassifiedData) {
+        // wrap data for plotter
+        var plotCircles = [];
+        for (var species in boundaryCircles) {
+            var plotCircle = {
+                shape: 'circle',
+                data: boundaryCircles[species]
+            };
+            plotCircle.data.category = species + '_identified';
+            plotCircles.push(plotCircle);
+        }
+
         plotter.createGraph(dom.window.document.querySelector('#graph1'), {
             width: 910,
             height: 440
         }, {
             x: "petal_length",
             y: "petal_width"
-        }, reclassifiedData, undefined, function(graphHTML) { // figure out how to draw circles
+        }, reclassifiedData, plotCircles, function(graphHTML) { // figure out how to draw circles
             fs.writeFileSync('extraCredit.html', dom.window.document.querySelector('body').innerHTML);
         });
     });
@@ -442,45 +455,32 @@ function question1(data) {
 }
 
 function classifyCircle(datum, circlesData) {
-    var classificationFunctions = {};
-    for (var key in circlesData) {
-        classificationFunctions[key] = function(datum) {
-            var distance =
-                Math.sqrt(Math.pow(datum.petal_length - circlesData[key].center.x, 2) + Math.pow(datum.petal_width - circlesData[key].center.y, 2));
-            return circlesData[key].radius < distance;
-        }
-    }
     return setCategory(
         datum.species,
-        classificationFunctions[datum.species](datum),
-        datum.species);
+        circlesData[datum.species].radius > Math.sqrt(Math.pow(datum.petal_length - circlesData[datum.species].center.x, 2) + Math.pow(datum.petal_width -
+            circlesData[datum.species].center.y, 2)));
 }
 
 function classifyLine(datum, boundary) {
     if (datum.species === 'virginica') {
         return setCategory(
             datum.species,
-            datum.petal_width > boundary.slope * datum.petal_length + boundary.intercept,
-            'virginica');
+            datum.petal_width > boundary.slope * datum.petal_length + boundary.intercept);
     } else if (datum.species === 'versicolor') {
         return setCategory(
             datum.species,
-            datum.petal_width < boundary.slope * datum.petal_length + boundary.intercept,
-            'versicolor');
+            datum.petal_width < boundary.slope * datum.petal_length + boundary.intercept);
     } else {
         console.log("UNEXPECTED DATA");
         return "UNEXPECTED_DATA";
     }
 }
 
-function setCategory(species, insideBoundary, target) {
-    console.log(species + " insideBoundary: " + insideBoundary);
-    if (species === target) {
-        if (insideBoundary) {
-            return species + '_identified';
-        } else {
-            return species + '_misclassified';
-        }
+function setCategory(species, insideBoundary) {
+    if (insideBoundary) {
+        return species + '_identified';
+    } else {
+        return species + '_misclassified';
     }
 }
 
@@ -493,8 +493,6 @@ function reclassify(data, classificationFunction, boundary, callback) {
             category: classificationFunction(data[i], boundary)
         });
     }
-
-    // console.log(reclassifiedData);
 
     callback(reclassifiedData);
 }
