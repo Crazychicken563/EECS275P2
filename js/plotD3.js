@@ -8,7 +8,7 @@ module.exports = {
      * data: [(x,y)]
      * callback
      */
-    createGraph: function(docElement, size, dataKeys, data, plotLine, callback) {
+    createGraph: function(docElement, size, dataKeys, data, plotShape, callback) {
         var x = d3.scaleLinear().range([0, size.width]);
         var y = d3.scaleLinear().range([size.height, 0]);
 
@@ -103,42 +103,48 @@ module.exports = {
                 return color(d[category]);
             });
 
-        if (plotLine) {
-            for (var i in plotLine) {
-                var lineData = plotLine[i];
+        if (plotShape) {
+            for (var i in plotShape) {
+                if (plotShape[i].shape === 'line') {
+                    var lineData = plotShape[i].data;
 
-                var plotData = [];
-                plotData.push({
-                    x: xExtent[0],
-                    y: lineData.slope * xExtent[0] + lineData.intercept
-                });
-                plotData.push({
-                    x: xExtent[1],
-                    y: lineData.slope * xExtent[1] + lineData.intercept
-                });
-                var line = d3.line()
-                    .x(function(d) {
-                        console.log("x:" + x(d.x));
-                        return x(d.x);
-                    })
-                    .y(function(d) {
-                        console.log("y:" + y(d.y));
-                        return y(d.y);
+                    var plotData = [];
+                    plotData.push({
+                        x: xExtent[0],
+                        y: lineData.slope * xExtent[0] + lineData.intercept
                     });
+                    plotData.push({
+                        x: xExtent[1],
+                        y: lineData.slope * xExtent[1] + lineData.intercept
+                    });
+                    var line = d3.line()
+                        .x(function(d) {
+                            console.log("x:" + x(d.x));
+                            return x(d.x);
+                        })
+                        .y(function(d) {
+                            console.log("y:" + y(d.y));
+                            return y(d.y);
+                        });
 
-                var strokeColor = lineData.strokeColor;
-                if (!strokeColor) {
-                    strokeColor = "steelblue";
+                    var strokeColor = lineData.strokeColor;
+                    if (!strokeColor) {
+                        strokeColor = "steelblue";
+                    }
+                    console.log(plotData[0]);
+                    svg.append("path")
+                        .datum(plotData)
+                        .attr("fill", "none")
+                        .attr("stroke", strokeColor)
+                        .attr("stroke-linejoin", "round")
+                        .attr("stroke-linecap", "round")
+                        .attr("stroke-width", 1.5)
+                        .attr("d", line);
+                } else if (plotShape.shape === 'circle') {
+                    // circle stuff!!
+                } else {
+                    console.log("UNKNOWN SHAPE");
                 }
-                console.log(plotData[0]);
-                svg.append("path")
-                    .datum(plotData)
-                    .attr("fill", "none")
-                    .attr("stroke", strokeColor)
-                    .attr("stroke-linejoin", "round")
-                    .attr("stroke-linecap", "round")
-                    .attr("stroke-width", 1.5)
-                    .attr("d", line);
             }
         }
 
