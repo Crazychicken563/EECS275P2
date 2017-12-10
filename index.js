@@ -11,6 +11,9 @@ var irisData = [];
 var csvReader = csv().fromFile('irisdata.csv');
 var blacklistColumn = ['sepal_length', 'sepal_width'];
 
+const gradientStep = 0.01;
+const decentErrorMargin = 0.00001;
+
 // Convert CSV file to array of json objects
 csvReader.on('json', (plantData) => {
     // filter out sepal here
@@ -42,9 +45,9 @@ csvReader.on('done', (error) => {
     if (error) {
         console.log(error);
     }
-    //question1(filterSpecies('setosa'));
+    question1(filterSpecies('setosa'));
     question2(filterSpecies('setosa'));
-    //question3(filterSpecies('setosa'));
+    question3(filterSpecies('setosa'));
     extraCreditQuestion(irisData);
 });
 
@@ -110,33 +113,43 @@ function question3(data) {
     const dom = new JSDOM(
         `<html>
             <body>
-                <div>Question 3 Part X<br>Initial Random Gradient for versicolor and virginica</div>
+                <div>Question 3 Part C<br>Initial Random Gradient for versicolor and virginica</div>
                 <div id=initial-boundary></div>
                 <div id="graph1" style="width: fit-content; height: fit-content; padding: 5px; border: black; border-style: solid; border-width: thin;"></div>
-                <div>Question 3 Part X<br>Halfway Through Gradient Decent for versicolor and virginica</div>
+                <div>Question 3 Part C<br>Halfway Through Gradient Decent for versicolor and virginica</div>
                 <div id=halfway-boundary></div>
                 <div id="graph2" style="width: fit-content; height: fit-content; padding: 5px; border: black; border-style: solid; border-width: thin;"></div>
-                <div>Question 3 Part X<br>Midway Through Gradient Decent Error History for versicolor and virginica</div>
+                <div>Question 3 Part C<br>Midway Through Gradient Decent Error History for versicolor and virginica</div>
                 <div id="graph3" style="width: fit-content; height: fit-content; padding: 5px; border: black; border-style: solid; border-width: thin;"></div>
-                <div>Question 3 Part X<br>Final State of Gradient Decent for versicolor and virginica</div>
+                <div>Question 3 Part C<br>Final State of Gradient Decent for versicolor and virginica</div>
                 <div id=final-boundary></div>
                 <div id="graph4" style="width: fit-content; height: fit-content; padding: 5px; border: black; border-style: solid; border-width: thin;"></div>
-                <div>Question 3 Part X<br>Final State of Gradient Decent Error History for versicolor and virginica</div>
+                <div>Question 3 Part C<br>Final State of Gradient Decent Error History for versicolor and virginica</div>
                 <div id="graph5" style="width: fit-content; height: fit-content; padding: 5px; border: black; border-style: solid; border-width: thin;"></div>
             </body>
         </html>`
     );
 
-    var intercept = Math.random() * 3 + 2;
     var startBoundary = {
-        intercept: intercept,
-        slope: -1 * Math.random() * (intercept / 3) + 0.5
+        intercept: Math.random() * 0.2 + 3.2,
+        slope: -(Math.random() * 0.4 + 0.2)
     }
 
-    calculateMSE(data, startBoundary, function(startError) {
-        calculateDescent(data, startError, 100, startBoundary, [], function(finalBoundary, gradientHistory) {
-            console.log(gradientHistory);
-            reclassify(data, classifyLine, startBoundary, function(reclassifiedData) {
+    //lower limit
+    /*var startBoundary = {
+        intercept: 3.3,
+        slope: -0.6
+    }*/
+
+    // upper limit
+    /*var startBoundary = {
+        intercept: 3.5,
+        slope: -0.2
+    }*/
+
+    reclassify(data, classifyLine, startBoundary, function(reclassifiedData) {
+        calculateMSE(reclassifiedData, startBoundary, function(startError) {
+            calculateDescent(reclassifiedData, startError, 100, startBoundary, [], function(finalBoundary, gradientHistory) {
                 // First plot
                 dom.window.document.querySelector('#initial-boundary').innerHTML = 'Initial Boundary: ' +
                     'y=' + startBoundary.slope + '*x+' + startBoundary.intercept;
@@ -154,7 +167,7 @@ function question3(data) {
                     var halfwayGradient = gradientHistory[halfwayGradientHistoryIndex];
                     reclassify(data, classifyLine, halfwayGradient, function(reclassifiedData) {
                         // Middle plot
-                        dom.window.document.querySelector('#initial-boundary').innerHTML = 'Halfway Boundary: ' +
+                        dom.window.document.querySelector('#halfway-boundary').innerHTML = 'Halfway Boundary: ' +
                             'y=' + halfwayGradient.slope + '*x+' + halfwayGradient.intercept;
                         plotter.createGraph(dom.window.document.querySelector('#graph2'), {
                             width: 910,
@@ -186,7 +199,7 @@ function question3(data) {
                                 reclassify(data, classifyLine, finalGradient, function(
                                     reclassifiedData) {
                                     // Final plot
-                                    dom.window.document.querySelector('#initial-boundary').innerHTML =
+                                    dom.window.document.querySelector('#final-boundary').innerHTML =
                                         'Final Boundary: ' +
                                         'y=' + finalGradient.slope + '*x+' + finalGradient.intercept;
                                     plotter.createGraph(dom.window.document.querySelector(
@@ -227,10 +240,10 @@ function question3(data) {
                                                     'body'
                                                 ).innerHTML
                                             );
-                                        });
+                                        }, false);
                                     });
                                 });
-                            });
+                            }, false);
                         });
                     });
                 });
@@ -240,10 +253,10 @@ function question3(data) {
 }
 
 function calculateDescent(data, currError, prevError, currBoundary, gradientHistory, callback) {
-    // gradient descent by calling the step function until the MSE doesn't change more than 0.00001 ("converges")
+    // Keep calling calculateGradient with updated values until the difference in error is insignificant
     currBoundary.error = currError;
     gradientHistory.push(currBoundary);
-    if (prevError - currError > 0.00001) {
+    if (Math.abs(prevError - currError) > decentErrorMargin) {
         calculateGradient(data, currBoundary, function(newBoundary) {
             calculateMSE(data, newBoundary, function(newError) {
                 process.nextTick(function() {
@@ -275,8 +288,8 @@ function question2(data) {
 
     // PART B
     var smallErrorBoundary = {
-        slope: -0.371,
-        intercept: 3.4
+        slope: -0.38,
+        intercept: 3.5
     };
     reclassify(data, classifyLine, smallErrorBoundary, function(reclassifiedData) {
         calculateMSE(reclassifiedData, smallErrorBoundary, function(error) {
@@ -292,7 +305,7 @@ function question2(data) {
                 data: smallErrorBoundary
             }], function(graphHTML) {
                 var largeErrorBoundary = {
-                    slope: -0.371,
+                    slope: -0.39,
                     intercept: 4.5
                 };
                 reclassify(data, classifyLine, largeErrorBoundary, function(reclassifiedData) {
@@ -367,35 +380,39 @@ function calculateGradient(data, boundary, callback) {
 
     // Question 2 Part D
     // Scalar Form
-    // console.log("Scalar Form: " + slopeGradient);
-
-    var change = (slopeGradient * 2) / data.length;
-    var change_b = (interceptGradient * 2) / data.length;
-    var delta = 0.2 / data.length;
-
-    var gradientBoundary = {
-        slope: boundary.slope - change * delta,
-        intercept: boundary.intercept - change_b * delta
-    };
+    var changeSlope = (slopeGradient * 2) / data.length;
+    var changeIntercept = (interceptGradient * 2) / data.length;
+    var delta = gradientStep / data.length;
 
     // Question 2 Part D
     // Vector Form
-    // console.log("Vector Form: " + gradientBoundary);
+    var gradientBoundary = {
+        slope: boundary.slope - changeSlope * delta,
+        intercept: boundary.intercept - changeIntercept * delta
+    };
+
     callback(gradientBoundary);
 }
 
 // Question 2 Part A
 function calculateMSE(data, boundary, callback) {
     // computing the difference between the observed and expected squared
-    var error_sum = 0;
+    var totalError = 0;
     for (var i in data) {
-        var difference = (boundary.slope * data[i].petal_length + boundary.intercept) - data[i].petal_width;
-        error_sum += Math.pow(difference, 2);
+        var category = data[i].category;
+        //if (isMisclassifed(category)) {
+        var error = (boundary.slope * data[i].petal_length + boundary.intercept) - data[i].petal_width;
+        totalError += Math.pow(error, 2);
+        //}
     }
 
     // calculating the error
-    error = error_sum / data.length;
+    error = totalError / data.length;
     callback(error);
+}
+
+function isMisclassifed(category) {
+    return category.substr(category.indexOf('_') + 1, category.length) === 'misclassified';
 }
 
 function question1(data) {
@@ -422,8 +439,8 @@ function question1(data) {
     }, data, undefined, function(graphHTML) {
         // PART B
         var arbitraryClassificationBoundary = {
-            slope: -0.371,
-            intercept: 3.4
+            slope: -0.38,
+            intercept: 3.5
         }
         plotter.createGraph(dom.window.document.querySelector('#graph2'), {
             width: 910,

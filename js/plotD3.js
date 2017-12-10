@@ -8,7 +8,10 @@ module.exports = {
      * data: [(x,y)]
      * callback
      */
-    createGraph: function(docElement, size, dataKeys, data, plotShape, callback) {
+    createGraph: function(docElement, size, dataKeys, data, plotShape, callback, showLegend) {
+        if (showLegend === undefined) {
+            showLegend = true;
+        }
         var xScale = d3.scaleLinear().range([0, size.width]);
         var yScale = d3.scaleLinear().range([size.height, 0]);
 
@@ -19,14 +22,12 @@ module.exports = {
             var keys = Object.keys(data[0]);
             for (var i in keys) {
                 var key = keys[i];
-                console.log("key:" + key);
                 if (dataKeys.x !== key && dataKeys.y !== key) {
                     category = key;
                     break;
                 }
             }
         }
-        console.log("category " + category);
 
         var xAxis = d3.axisBottom().scale(xScale);
         var yAxis = d3.axisLeft().scale(yScale);
@@ -98,7 +99,6 @@ module.exports = {
 
         if (plotShape) {
             for (var i in plotShape) {
-                console.log(plotShape[i].shape);
                 if (plotShape[i].shape === 'line') {
                     var lineData = plotShape[i].data;
 
@@ -156,28 +156,30 @@ module.exports = {
             }
         }
 
-        var legend = svg.selectAll(".legend")
-            .data(color.domain())
-            .enter().append("g")
-            .attr("class", "legend")
-            .attr("transform", function(d, i) {
-                return "translate(0," + i * 20 + ")";
-            });
+        if (showLegend) {
+            var legend = svg.selectAll(".legend")
+                .data(color.domain())
+                .enter().append("g")
+                .attr("class", "legend")
+                .attr("transform", function(d, i) {
+                    return "translate(0," + i * 20 + ")";
+                });
 
-        legend.append("rect")
-            .attr("x", size.width - 18)
-            .attr("width", 18)
-            .attr("height", 18)
-            .style("fill", color);
+            legend.append("rect")
+                .attr("x", size.width - 18)
+                .attr("width", 18)
+                .attr("height", 18)
+                .style("fill", color);
 
-        legend.append("text")
-            .attr("x", size.width - 24)
-            .attr("y", 9)
-            .attr("dy", ".35em")
-            .style("text-anchor", "end")
-            .text(function(d) {
-                return d;
-            });
+            legend.append("text")
+                .attr("x", size.width - 24)
+                .attr("y", 9)
+                .attr("dy", ".35em")
+                .style("text-anchor", "end")
+                .text(function(d) {
+                    return d;
+                });
+        }
 
         callback(d3.select(docElement).html());
     }
