@@ -1,17 +1,15 @@
 {
     "name": "EECS391P2",
     "version": "1.0.0",
-    "main": "lineChoose.js",
+    "main": "index.js",
     "scripts": {
-        "start": "nodejs lineChoose"
+        "start": "node index.js"
     },
     "dependencies": {
         "csvtojson": "^1.1.9",
         "d3": "^4.12.0",
         "fs": "0.0.2",
-        "heap": "^0.2.6",
-        "jsdom": "^11.5.1",
-        "make-runnable": "^1.3.6"
+        "jsdom": "^11.5.1"
     },
     "devDependencies": {}
 }

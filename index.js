@@ -45,9 +45,9 @@ csvReader.on('done', (error) => {
     if (error) {
         console.log(error);
     }
-    //question1(filterSpecies('setosa'));
-    //question2(filterSpecies('setosa'));
-    //question3(filterSpecies('setosa'));
+    question1(filterSpecies('setosa'));
+    question2(filterSpecies('setosa'));
+    question3(filterSpecies('setosa'));
     extraCreditQuestion(irisData);
 });
 
@@ -326,7 +326,8 @@ function question2(data) {
                                 calculateGradient(reclassifiedData, smallErrorBoundary, function(
                                     gradientBoundary) {
                                     dom.window.document.querySelector('#gradient').innerHTML =
-                                        'Gradient Step:' +
+                                        'Gradient Step: ' +
+                                        gradientStep +
                                         '<br>Before: ' +
                                         'y=' + smallErrorBoundary.slope + '*x+' +
                                         smallErrorBoundary.intercept +
@@ -368,9 +369,8 @@ function question2(data) {
     });
 }
 
-// Question 2 Part C
+// Question 2 Part E
 function calculateGradient(data, boundary, callback) {
-    // calculating the step of the gradient
     var interceptGradient = 0;
     var slopeGradient = 0;
     for (var i in data) {
@@ -378,14 +378,10 @@ function calculateGradient(data, boundary, callback) {
         slopeGradient += ((boundary.slope * data[i].petal_length + boundary.intercept) - data[i].petal_width) * data[i].petal_length;
     }
 
-    // Question 2 Part D
-    // Scalar Form
     var changeSlope = (slopeGradient * 2) / data.length;
     var changeIntercept = (interceptGradient * 2) / data.length;
     var delta = gradientStep / data.length;
 
-    // Question 2 Part D
-    // Vector Form
     var gradientBoundary = {
         slope: boundary.slope - changeSlope * delta,
         intercept: boundary.intercept - changeIntercept * delta
@@ -396,23 +392,17 @@ function calculateGradient(data, boundary, callback) {
 
 // Question 2 Part A
 function calculateMSE(data, boundary, callback) {
-    // computing the difference between the observed and expected squared
     var totalError = 0;
+    // Acummilate the error
     for (var i in data) {
-        var category = data[i].category;
-        //if (isMisclassifed(category)) {
         var error = (boundary.slope * data[i].petal_length + boundary.intercept) - data[i].petal_width;
+        // error ^2
         totalError += Math.pow(error, 2);
-        //}
     }
 
-    // calculating the error
+    // divide by length of data to get mean error^2
     error = totalError / data.length;
     callback(error);
-}
-
-function isMisclassifed(category) {
-    return category.substr(category.indexOf('_') + 1, category.length) === 'misclassified';
 }
 
 function question1(data) {
