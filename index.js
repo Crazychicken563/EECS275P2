@@ -45,9 +45,9 @@ csvReader.on('done', (error) => {
     if (error) {
         console.log(error);
     }
-    question1(filterSpecies('setosa'));
-    question2(filterSpecies('setosa'));
-    question3(filterSpecies('setosa'));
+    //question1(filterSpecies('setosa'));
+    //question2(filterSpecies('setosa'));
+    //question3(filterSpecies('setosa'));
     extraCreditQuestion(irisData);
 });
 
@@ -64,24 +64,24 @@ function extraCreditQuestion(data) {
     var boundaryCircles = {
         setosa: {
             center: {
-                x: 1.464,
-                y: 0.244
+                x: 1.46,
+                y: 0.3
             },
             radius: 0.5
         },
         versicolor: {
             center: {
-                x: 4,
+                x: 4.02,
                 y: 1.326
             },
-            radius: 1.1
+            radius: 1.07
         },
         virginica: {
             center: {
-                x: 6,
+                x: 5.85,
                 y: 2.026
             },
-            radius: 1.15
+            radius: 1.1
         }
     };
 
